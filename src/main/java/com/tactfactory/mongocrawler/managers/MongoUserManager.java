@@ -12,6 +12,7 @@ import org.bson.conversions.Bson;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
+import com.tactfactory.mongocrawler.configurations.Operators;
 import com.tactfactory.mongocrawler.utils.ScannerUtil;
 
 public class MongoUserManager {
@@ -58,42 +59,30 @@ public class MongoUserManager {
 
     loop = 1;
 
-    documents.forEach(x -> x.keySet().forEach(y -> {
-      if (!fields.containsValue(y)) {
-        String typeString = x.get(y) == null ? "null" : x.get(y).getClass().getName();
-        if (!typeString.equals(ArrayList.class.getName())) {
-          fieldsType.put(y, typeString);
-          fields.put(loop, y);
-          fieldsChoice.add(String.format("%s : %s", loop, y));
-          MongoUserManager.this.loop++;
-        } else {
-          // System.out.println("Array");
-        }
-      }
-    }));
+    this.ExtractDocumentsFields(documents, fields, fieldsType, fieldsChoice);
+
     String choice = ScannerUtil.getInstance().selectStringFromIntChoice("Sélection un champ", fieldsChoice.toArray(),
         fields);
 
-    final List<String> operators = new ArrayList<>();
-    operators.add("=");
-    operators.add(">");
-    operators.add("<");
-    operators.add(">=");
-    operators.add("<=");
-    operators.add("!=");
-    final List<String> operatorChoice = new ArrayList<>();
-    operatorChoice.add(String.format("0 - %s", operators.get(0)));
-    operatorChoice.add(String.format("1 - %s", operators.get(1)));
-    operatorChoice.add(String.format("2 - %s", operators.get(2)));
-    operatorChoice.add(String.format("3 - %s", operators.get(3)));
-    operatorChoice.add(String.format("4 - %s", operators.get(4)));
-    operatorChoice.add(String.format("5 - %s", operators.get(5)));
+    int choiceOperator = ScannerUtil.getInstance().selectInt("Sélection un opérateur",
+        Operators.getDisplayChoices().toArray(), 0, Operators.getDisplayChoices().size() - 1);
 
-    int choiceOperator = ScannerUtil.getInstance().selectInt("Sélection un opérateur", operatorChoice.toArray(), 0,
-        operatorChoice.size() - 1);
+    System.out.println(String.format("Insérer une valeur pour %s avec l'opérateur %s", choice,
+        Operators.getDisplayList().get(choiceOperator)));
 
-    System.out.println(String.format("Insérer une valeur pour %s avec l'opérateur %s", choice, operators.get(choiceOperator)));
+    Bson filter = this.ActionsForFieldAndOperator(fieldsType, choice, choiceOperator);
 
+    result = this.db.getCollection(collection).find(filter);
+
+    for (Document document : result) {
+      System.out.println(document.toJson());
+    }
+
+    System.out.println("find");
+    return result;
+  }
+
+  private Bson ActionsForFieldAndOperator(final Map<String, String> fieldsType, String choice, int choiceOperator) {
     Class<?> cls = null;
     try {
       cls = Class.forName(fieldsType.get(choice));
@@ -113,8 +102,8 @@ public class MongoUserManager {
         break;
 
       default:
-        System.out
-            .println(String.format("Opération non autorisé pour l'opérateur %s", operatorChoice.get(choiceOperator)));
+        System.out.println(String.format("Opération non autorisé pour l'opérateur %s",
+            Operators.getDisplayList().get(choiceOperator)));
         break;
       }
 
@@ -145,20 +134,29 @@ public class MongoUserManager {
         break;
 
       default:
-        System.out
-            .println(String.format("Opération non autorisé pour l'opérateur %s", operatorChoice.get(choiceOperator)));
+        System.out.println(String.format("Opération non autorisé pour l'opérateur %s",
+            Operators.getDisplayList().get(choiceOperator)));
         break;
       }
     }
+    return filter;
+  }
 
-    result = this.db.getCollection(collection).find(filter);
-
-    for (Document document : result) {
-      System.out.println(document.toJson());
-    }
-
-    System.out.println("find");
-    return result;
+  private void ExtractDocumentsFields(final FindIterable<Document> documents, final Map<Integer, String> fields,
+      final Map<String, String> fieldsType, final List<String> fieldsChoice) {
+    documents.forEach(x -> x.keySet().forEach(y -> {
+      if (!fields.containsValue(y)) {
+        String typeString = x.get(y) == null ? "null" : x.get(y).getClass().getName();
+        if (!typeString.equals(ArrayList.class.getName())) {
+          fieldsType.put(y, typeString);
+          fields.put(loop, y);
+          fieldsChoice.add(String.format("%s : %s", loop, y));
+          MongoUserManager.this.loop++;
+        } else {
+          // System.out.println("Array");
+        }
+      }
+    }));
   }
 
   private Integer selectionCollectionOption() {
