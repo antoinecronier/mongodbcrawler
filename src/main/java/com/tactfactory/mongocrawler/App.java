@@ -5,6 +5,7 @@ package com.tactfactory.mongocrawler;
 
 import com.mongodb.client.MongoDatabase;
 import com.tactfactory.mongocrawler.database.MongoService;
+import com.tactfactory.mongocrawler.managers.MongoUserManager;
 
 public class App {
   public String getGreeting() {
@@ -50,10 +51,7 @@ public class App {
 
     MongoService service = new MongoService(host, port);
     MongoDatabase db = service.getMongoClient().getDatabase(database);
-    for (String string : db.listCollectionNames()) {
-      System.out.println(string);
-    }
-
+    new MongoUserManager(db).run();
 
     System.out.println("Ended");
   }
