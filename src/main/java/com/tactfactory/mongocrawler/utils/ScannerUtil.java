@@ -83,4 +83,25 @@ public class ScannerUtil {
 
     return selections.get(selected);
   }
+
+  public String inputString() {
+    if (this.sc.hasNextLine()) {
+      this.sc.nextLine();
+    }
+
+    return this.sc.nextLine();
+  }
+
+  public Integer inputInt() {
+    Integer result = null;
+
+    try {
+      result = this.sc.nextInt();
+    } catch (Exception e) {
+      System.err.println(e.getMessage());
+      result = inputInt();
+    }
+
+    return result;
+  }
 }
