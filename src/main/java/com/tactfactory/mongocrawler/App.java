@@ -3,6 +3,7 @@
  */
 package com.tactfactory.mongocrawler;
 
+import com.mongodb.client.MongoDatabase;
 import com.tactfactory.mongocrawler.database.MongoService;
 
 public class App {
@@ -15,6 +16,7 @@ public class App {
 
     String host = "127.0.0.1";
     Integer port = 27017;
+    String database = "";
 
     for (int i = 0; i < args.length; i++) {
       if (args[i].startsWith("--")) {
@@ -36,9 +38,23 @@ public class App {
             throw new Exception("--port not defined");
           }
         }
+        if (args[i].equals("--db")) {
+          if (i + 1 < args.length && !args[i + 1].startsWith("--")) {
+            database = args[i+1];
+          }else {
+            throw new Exception("--db not defined");
+          }
+        }
       }
     }
 
     MongoService service = new MongoService(host, port);
+    MongoDatabase db = service.getMongoClient().getDatabase(database);
+    for (String string : db.listCollectionNames()) {
+      System.out.println(string);
+    }
+
+
+    System.out.println("Ended");
   }
 }

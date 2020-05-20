@@ -11,6 +11,10 @@ public class MongoService {
 
   private final MongoClient mongoClient;
 
+  public MongoClient getMongoClient() {
+    return mongoClient;
+  }
+
   public MongoService() {
     this("127.0.0.1", 27017);
   }
