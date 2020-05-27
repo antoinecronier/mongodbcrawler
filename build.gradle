@@ -24,6 +24,8 @@ repositories {
 
 dependencies {
 
+    compile group: 'com.github.javafaker', name: 'javafaker', version: '1.0.2'
+
     compile 'org.mongodb:mongodb-driver-sync:4.0.3'
     compile group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.25'
 
