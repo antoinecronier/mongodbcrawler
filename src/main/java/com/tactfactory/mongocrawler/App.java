@@ -6,6 +6,7 @@ package com.tactfactory.mongocrawler;
 import com.mongodb.client.MongoDatabase;
 import com.tactfactory.mongocrawler.database.MongoService;
 import com.tactfactory.mongocrawler.managers.MongoUserManager;
+import com.tactfactory.mongocrawler.utils.ScannerUtil;
 
 public class App {
   public String getGreeting() {

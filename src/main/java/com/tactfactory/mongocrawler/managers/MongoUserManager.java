@@ -80,7 +80,8 @@ public class MongoUserManager {
 
     BsonDocument value = null;
     if (cls == String.class) {
-      value = new BsonDocument("$set", new BsonDocument(field, new BsonString(ScannerUtil.getInstance().inputString())));
+      value = new BsonDocument("$set",
+          new BsonDocument(field, new BsonString(ScannerUtil.getInstance().inputString())));
     } else if (cls == Integer.class) {
       value = new BsonDocument("$set", new BsonDocument(field, new BsonInt32(ScannerUtil.getInstance().inputInt())));
     }
@@ -107,7 +108,8 @@ public class MongoUserManager {
 
     BsonDocument value = null;
     if (cls == String.class) {
-      value = new BsonDocument("$set", new BsonDocument(field, new BsonString(ScannerUtil.getInstance().inputString())));
+      value = new BsonDocument("$set",
+          new BsonDocument(field, new BsonString(ScannerUtil.getInstance().inputString())));
     } else if (cls == Integer.class) {
       value = new BsonDocument("$set", new BsonDocument(field, new BsonInt32(ScannerUtil.getInstance().inputInt())));
     }
@@ -116,11 +118,50 @@ public class MongoUserManager {
   }
 
   private void findOneAndUpdate(String collection, FindIterable<Document> documents, final BsonDocument value) {
-    documents.map(x -> x.get("_id")).forEach(y -> db.getCollection(collection).findOneAndUpdate(Filters.eq("_id", y), value));
+    documents.map(x -> x.get("_id"))
+        .forEach(y -> db.getCollection(collection).findOneAndUpdate(Filters.eq("_id", y), value));
   }
 
   private void insertInCollection(String collection) {
-    // TODO Auto-generated method stub
+    ScannerUtil.getInstance().inputString();
+
+    FindIterable<Document> documents = this.db.getCollection(collection).find();
+    if (documents.iterator().hasNext()) {
+      final Map<Integer, String> fields = new HashMap<>();
+      final Map<String, String> fieldsType = new HashMap<>();
+      final List<String> fieldsChoice = new ArrayList<>();
+
+      this.ExtractDocumentsFields(documents, fields, fieldsType, fieldsChoice);
+
+      Document newDocument = new Document();
+
+      for (String field : fields.values()) {
+        Class<?> cls = null;
+        try {
+          cls = Class.forName(fieldsType.get(field));
+        } catch (ClassNotFoundException e) {
+          e.printStackTrace();
+          cls = String.class;
+        }
+
+        System.out
+            .println(String.format("Insérer une valeur pour %s de type %s ou null pour passer", field, cls.getName()));
+
+        String userValue = ScannerUtil.getInstance().inputString();
+        if (!userValue.equals("null")) {
+          if (cls == String.class) {
+            newDocument.append(field, new BsonString(userValue));
+          } else if (cls == Integer.class) {
+            newDocument.append(field, new BsonInt32(Integer.parseInt(userValue)));
+          }
+        }
+      }
+
+      this.db.getCollection(collection).insertOne(newDocument);
+
+    } else {
+      System.out.println("il doit exister un premier document type dans la collection.");
+    }
     System.out.println("insert");
   }
 
