@@ -1,11 +1,13 @@
 package com.tactfactory.mongocrawler.managers;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.bson.BsonDocument;
+import org.bson.BsonInt32;
+import org.bson.BsonString;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 
@@ -30,16 +32,91 @@ public class MongoUserManager {
 
       switch (option) {
       case 1:
-        FindIterable<Document> datas = this.findIncollection(collection);
+        FindIterable<Document> documents = this.findIncollection(collection);
+        if (documents.iterator().hasNext()) {
+          String documentId;
+          Integer searchOption = this.selectionSearchOption();
+          switch (searchOption) {
+          case 1:
+            documents.map(x -> x.get("_id")).forEach(y -> db.getCollection(collection).deleteOne(Filters.eq("_id", y)));
+            break;
+          case 2:
+            documentId = selectOneDocumentId(documents);
+            db.getCollection(collection).deleteOne(Filters.eq("_id", documentId));
+            break;
+          case 3:
+            this.updateAllForField(collection, documents);
+            break;
+          case 4:
+            documentId = selectOneDocumentId(documents);
+            this.updateOneForField(collection, documents, documentId);
+            break;
+          }
+        }
         break;
       case 2:
         this.insertInCollection(collection);
         break;
-
-      default:
-        break;
       }
     }
+  }
+
+  private void updateOneForField(String collection, FindIterable<Document> documents, String documentId) {
+    final Map<Integer, String> fields = new HashMap<>();
+    final Map<String, String> fieldsType = new HashMap<>();
+    final List<String> fieldsChoice = new ArrayList<>();
+
+    String field = this.selectField(documents, fields, fieldsType, fieldsChoice);
+
+    Class<?> cls = null;
+    try {
+      cls = Class.forName(fieldsType.get(field));
+    } catch (ClassNotFoundException e) {
+      e.printStackTrace();
+      cls = String.class;
+    }
+
+    System.out.println(String.format("Insérer une valeur pour %s ", field));
+
+    BsonDocument value = null;
+    if (cls == String.class) {
+      value = new BsonDocument("$set", new BsonDocument(field, new BsonString(ScannerUtil.getInstance().inputString())));
+    } else if (cls == Integer.class) {
+      value = new BsonDocument("$set", new BsonDocument(field, new BsonInt32(ScannerUtil.getInstance().inputInt())));
+    }
+
+    db.getCollection(collection).findOneAndUpdate(Filters.eq("_id", documentId), value);
+  }
+
+  private void updateAllForField(String collection, FindIterable<Document> documents) {
+    final Map<Integer, String> fields = new HashMap<>();
+    final Map<String, String> fieldsType = new HashMap<>();
+    final List<String> fieldsChoice = new ArrayList<>();
+
+    String field = this.selectField(documents, fields, fieldsType, fieldsChoice);
+
+    Class<?> cls = null;
+    try {
+      cls = Class.forName(fieldsType.get(field));
+    } catch (ClassNotFoundException e) {
+      e.printStackTrace();
+      cls = String.class;
+    }
+
+    System.out.println(String.format("Insérer une valeur pour %s ", field));
+
+    BsonDocument value = null;
+    if (cls == String.class) {
+      value = new BsonDocument("$set", new BsonDocument(field, new BsonString(ScannerUtil.getInstance().inputString())));
+    } else if (cls == Integer.class) {
+      value = new BsonDocument("$set", new BsonDocument(field, new BsonInt32(ScannerUtil.getInstance().inputInt())));
+    }
+
+    this.findOneAndUpdate(collection, documents, value);
+  }
+
+  private void findOneAndUpdate(String collection, FindIterable<Document> documents, final BsonDocument value) {
+    documents.map(x -> x.get("_id")).forEach(y -> db.getCollection(collection).findOneAndUpdate(Filters.eq("_id", y), value));
   }
 
   private void insertInCollection(String collection) {
@@ -57,12 +134,7 @@ public class MongoUserManager {
     final Map<String, String> fieldsType = new HashMap<>();
     final List<String> fieldsChoice = new ArrayList<>();
 
-    loop = 1;
-
-    this.ExtractDocumentsFields(documents, fields, fieldsType, fieldsChoice);
-
-    String choice = ScannerUtil.getInstance().selectStringFromIntChoice("Sélection un champ", fieldsChoice.toArray(),
-        fields);
+    String choice = this.selectField(documents, fields, fieldsType, fieldsChoice);
 
     int choiceOperator = ScannerUtil.getInstance().selectInt("Sélection un opérateur",
         Operators.getDisplayChoices().toArray(), 0, Operators.getDisplayChoices().size() - 1);
@@ -80,6 +152,17 @@ public class MongoUserManager {
 
     System.out.println("find");
     return result;
+  }
+
+  private String selectField(final FindIterable<Document> documents, final Map<Integer, String> fields,
+      final Map<String, String> fieldsType, final List<String> fieldsChoice) {
+    loop = 1;
+
+    this.ExtractDocumentsFields(documents, fields, fieldsType, fieldsChoice);
+
+    String choice = ScannerUtil.getInstance().selectStringFromIntChoice("Sélection un champ", fieldsChoice.toArray(),
+        fields);
+    return choice;
   }
 
   private Bson ActionsForFieldAndOperator(final Map<String, String> fieldsType, String choice, int choiceOperator) {
@@ -157,6 +240,29 @@ public class MongoUserManager {
         }
       }
     }));
+  }
+
+  private String selectOneDocumentId(FindIterable<Document> documents) {
+    final List<String> datas = new ArrayList<>();
+    final Map<Integer, String> choicesDatas = new HashMap<Integer, String>();
+    int loop = 1;
+    for (Document document : documents) {
+      choicesDatas.put(loop, document.get("_id").toString());
+      datas.add(String.format("%s : %s", loop, document.toJson()));
+      loop++;
+    }
+
+    return ScannerUtil.getInstance().selectStringFromIntChoice("Sélectionner un document", datas.toArray(),
+        choicesDatas);
+  }
+
+  private Integer selectionSearchOption() {
+    final List<String> datas = new ArrayList<>();
+    datas.add("1 : supprimer les documents");
+    datas.add("2 : supprimer un document");
+    datas.add("3 : modifier les documents");
+    datas.add("4 : modifier un document");
+    return ScannerUtil.getInstance().selectInt("Sélectionner une option", datas.toArray(), 1, 4);
   }
 
   private Integer selectionCollectionOption() {

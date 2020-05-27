@@ -28,7 +28,7 @@ public class MongoService {
   }
 
   public MongoService(final String host, final Integer port) {
-    mongoClient = MongoClients.create(
+    this.mongoClient = MongoClients.create(
         MongoClientSettings.builder()
                 .applyToClusterSettings(builder ->
                         builder.hosts(Arrays.asList(new ServerAddress(host, port))))

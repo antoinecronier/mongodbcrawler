@@ -32,6 +32,9 @@ public class ScannerUtil {
   public Integer selectInt(final String msg, final Object[] choices, final Integer min, final Integer max) {
     Integer result = null;
     do {
+      if (this.sc.hasNextLine()) {
+        this.sc.nextLine();
+      }
       System.out.println(msg);
       for (Object choice : choices) {
         System.out.println(choice.toString());
@@ -42,7 +45,7 @@ public class ScannerUtil {
         System.err.println(e.getMessage());
       }
 
-    } while (result < min || result > max);
+    } while (result == null || (result < min || result > max));
 
     return result;
   }
@@ -50,6 +53,9 @@ public class ScannerUtil {
   public String selectString(final String msg, final Object[] choices, final List<String> selections) {
     String result = null;
     do {
+      if (this.sc.hasNextLine()) {
+        this.sc.nextLine();
+      }
       System.out.println(msg);
       for (Object choice : choices) {
         System.out.println(choice.toString());
@@ -69,6 +75,9 @@ public class ScannerUtil {
     Integer selected = null;
 
     do {
+      if (this.sc.hasNextLine()) {
+        this.sc.nextLine();
+      }
       System.out.println(msg);
       for (Object choice : choices) {
         System.out.println(choice.toString());
@@ -96,6 +105,9 @@ public class ScannerUtil {
     Integer result = null;
 
     try {
+      if (this.sc.hasNextLine()) {
+        this.sc.nextLine();
+      }
       result = this.sc.nextInt();
     } catch (Exception e) {
       System.err.println(e.getMessage());
